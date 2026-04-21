@@ -1,0 +1,169 @@
+// Portfolio Data — Vincentius Bryan Kwandou (nayrbryan_gaming)
+
+export const personal = {
+  name: "Vincentius Bryan Kwandou",
+  alias: "nayrbryan_gaming",
+  title: "Web3 Builder & Full-Stack Developer",
+  tagline: "Building on-chain. Living off-chain. Shipping real.",
+  bio: "I'm a passionate developer and Web3 builder from Indonesia, focused on crafting sovereign digital infrastructure — from quantum-resistant blockchains to Solana payment protocols. I ship products that matter, at the intersection of finance, technology, and decentralization.",
+  location: "Indonesia 🇮🇩",
+  email: "Vincentius.kwandou@gmail.com",
+  website: "https://solq.my.id",
+  vercelDomain: "https://nayrbryanGaming.vercel.app",
+  avatar: "https://avatars.githubusercontent.com/u/nayrbryanGaming",
+};
+
+export const social = [
+  {
+    name: "GitHub",
+    handle: "@nayrbryanGaming",
+    url: "https://github.com/nayrbryanGaming",
+    icon: "github",
+    color: "#ffffff",
+  },
+  {
+    name: "LinkedIn",
+    handle: "Bryan Kwandou",
+    url: "https://www.linkedin.com/in/bryankwandou",
+    icon: "linkedin",
+    color: "#0A66C2",
+  },
+  {
+    name: "X (Twitter)",
+    handle: "@nayrbryanGaming",
+    url: "https://x.com/nayrbryanGaming",
+    icon: "x",
+    color: "#ffffff",
+  },
+  {
+    name: "Instagram",
+    handle: "@nayrbryan_gaming",
+    url: "https://www.instagram.com/nayrbryan_gaming",
+    icon: "instagram",
+    color: "#E1306C",
+  },
+  {
+    name: "TikTok",
+    handle: "@nayrbryan_gaming",
+    url: "https://www.tiktok.com/@nayrbryan_gaming",
+    icon: "tiktok",
+    color: "#ffffff",
+  },
+  {
+    name: "Telegram",
+    handle: "@nayrbryangaming",
+    url: "https://t.me/nayrbryangaming",
+    icon: "telegram",
+    color: "#26A5E4",
+  },
+  {
+    name: "Discord",
+    handle: "nayrbryan_gaming",
+    url: "https://discord.com/users/648155670545301504",
+    icon: "discord",
+    color: "#5865F2",
+  },
+];
+
+export const skills = [
+  { category: "Blockchain / Web3", items: ["Solidity", "Rust", "Solana", "Ethereum", "DAG / BFT", "Smart Contracts", "DeFi", "NFT", "Jupiter V2", "Post-Quantum Crypto"] },
+  { category: "Frontend", items: ["React", "Next.js", "Flutter", "TypeScript", "TailwindCSS", "HTML/CSS", "Framer Motion"] },
+  { category: "Backend", items: ["Node.js", "REST APIs", "WebSocket", "State Machines"] },
+  { category: "DevOps & Tools", items: ["Git", "GitHub", "Vercel", "Docker", "CI/CD", "Linux"] },
+  { category: "Domains", items: ["DeFi Protocols", "Payment Infrastructure", "DAO Governance", "Quantum-Resistant Cryptography", "Layer 1 Architecture"] },
+];
+
+export const projects = [
+  {
+    id: 1,
+    name: "SOLQ",
+    tagline: "Real-Time Solana-to-Digital Settlement",
+    description: "Non-custodial payment orchestration infrastructure built on Solana Mainnet. SOLQ provides deterministic settlement bridging between digital wallets and standard payment networks. Features atomic on-chain swaps via Jupiter V2, multi-source oracle pricing, and enterprise-grade SHA-256 audit trails.",
+    tech: ["Flutter", "Node.js", "Solana", "Jupiter V2", "WebSocket", "SHA-256"],
+    github: "https://github.com/nayrbryanGaming/solq",
+    live: "https://solq.my.id",
+    status: "Live — Mainnet Pilot",
+    featured: true,
+    badge: "🔴 LIVE",
+    highlight: "Production-grade Solana DeFi infrastructure",
+  },
+  {
+    id: 2,
+    name: "QUANTCOIN",
+    tagline: "Post-Quantum Layer 1 Blockchain",
+    description: "The world's first hyper-sharded blockchain engineered for the quantum epoch. Targets 1 Trillion TPS via multi-dimensional DAG + async BFT consensus. Uses NIST Level 5 post-quantum cryptography (ML-DSA-87 / ML-KEM-1024). Features Quadratic Representative DAO governance and offline-capable LoRaWAN mesh propagation.",
+    tech: ["Rust", "ML-DSA-87", "ML-KEM-1024", "DAG", "BFT", "Argon2id", "LoRaWAN"],
+    github: "https://github.com/nayrbryanGaming/QUANTCOIN",
+    live: null,
+    status: "Phase 1 Complete",
+    featured: true,
+    badge: "⚡ PHASE 1 DONE",
+    highlight: "Quantum-resistant Layer 1 — next 1000 years of finance",
+  },
+  {
+    id: 3,
+    name: "Portfolio Website",
+    tagline: "Modern, Modular, & High-Impact",
+    description: "The current portfolio you are viewing — built with Next.js 14, CSS Modules, and Framer Motion. Engineered for maximum performance and professional aesthetic. Features deep dark mode, responsive design, and SEO optimization.",
+    tech: ["Next.js 14", "CSS Modules", "React", "Vercel", "Framer Motion"],
+    github: "https://github.com/nayrbryanGaming/Portofolio-Website",
+    live: "https://nayrbryanGaming.vercel.app",
+    status: "Live",
+    featured: false,
+    badge: "🚀 LIVE",
+    highlight: "Crafted for recruiters & developers",
+  },
+  {
+    id: 4,
+    name: "More Projects",
+    tagline: "Building the Future",
+    description: "Continuously shipping at the intersection of Web3, AI, and sovereign infrastructure. Follow my GitHub for the latest experiments, open-source contributions, and private repositories becoming public.",
+    tech: ["Web3", "AI", "Infrastructure", "Open Source"],
+    github: "https://github.com/nayrbryanGaming",
+    live: null,
+    status: "In Progress",
+    featured: false,
+    badge: "🔭 EXPLORING",
+    highlight: "Daily commits, daily growth",
+  },
+];
+
+export const certifications = [
+  {
+    name: "Blockchain & Web3 Development",
+    issuer: "LinkedIn Learning / Coursera",
+    year: "2024",
+    url: "https://www.linkedin.com/in/bryankwandou",
+  },
+  {
+    name: "Solana Developer Foundations",
+    issuer: "Solana Foundation",
+    year: "2024",
+    url: "https://www.linkedin.com/in/bryankwandou",
+  },
+  {
+    name: "Smart Contract Security & Auditing",
+    issuer: "Online Certification",
+    year: "2023",
+    url: "https://www.linkedin.com/in/bryankwandou",
+  },
+  {
+    name: "Full-Stack Web Development",
+    issuer: "Dicoding / Coursera",
+    year: "2023",
+    url: "https://www.linkedin.com/in/bryankwandou",
+  },
+  {
+    name: "Post-Quantum Cryptography Fundamentals",
+    issuer: "NIST / Self-study",
+    year: "2024",
+    url: "https://www.linkedin.com/in/bryankwandou",
+  },
+];
+
+export const stats = [
+  { label: "GitHub Repos", value: "10+", icon: "📁" },
+  { label: "Projects Shipped", value: "2", icon: "🚀" },
+  { label: "Chains Worked On", value: "Solana + EVM", icon: "⛓️" },
+  { label: "TPS Target (QUANTCOIN)", value: "1T", icon: "⚡" },
+];
