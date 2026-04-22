@@ -33,9 +33,7 @@ export default function Navbar() {
     <nav className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}>
       <div className={styles.inner}>
         <a href="#" className={styles.logo}>
-          <span className={styles.logoAccent}>{'{'}</span>
-          nayrbryan
-          <span className={styles.logoAccent}>{'}'}</span>
+          nayrbryan_
         </a>
 
         <div className={`${styles.links} ${menuOpen ? styles.open : ''}`}>

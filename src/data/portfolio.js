@@ -5,7 +5,7 @@ export const personal = {
   alias: "nayrbryan_gaming",
   title: "Web3 Builder & Full-Stack Developer",
   tagline: "Building on-chain. Living off-chain. Shipping real.",
-  bio: "I'm a passionate developer and Web3 builder from Indonesia, focused on crafting sovereign digital infrastructure — from quantum-resistant blockchains to Solana payment protocols. I ship products that matter, at the intersection of finance, technology, and decentralization.",
+  bio: "Building the next frontier of decentralized finance. From post-quantum Layer 1 blockchains (QUANTCOIN) to Solana payment infrastructure (SOLQ) — I architect sovereign digital products that matter. Based in Indonesia 🇮🇩, building for the world.",
   location: "Indonesia 🇮🇩",
   email: "Vincentius.kwandou@gmail.com",
   website: "https://solq.my.id",
