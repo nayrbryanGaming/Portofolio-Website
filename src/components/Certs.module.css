@@ -18,6 +18,19 @@
   cursor: pointer;
 }
 
+.certIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-glow);
+  border: 1px solid rgba(0, 255, 163, 0.2);
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
 .certCard:hover {
   border-color: var(--accent);
   transform: translateX(4px);

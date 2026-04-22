@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
+import About from '../components/About';
 import Projects from '../components/Projects';
 import Skills from '../components/Skills';
 import Certs from '../components/Certs';
@@ -24,10 +25,15 @@ export default function Home() {
 
       {/* Noise grain overlay */}
       <div className={styles.noise} />
+      <div className="grid-bg" />
+      <div className="blob blob-1" />
+      <div className="blob blob-2" />
+      <div className="blob blob-3" />
 
       <Navbar />
       <main>
         <Hero />
+        <About />
         <Projects />
         <Skills />
         <Certs />

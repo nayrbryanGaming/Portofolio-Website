@@ -29,6 +29,9 @@ export default function Certs() {
               rel="noopener noreferrer"
               className={styles.certCard}
             >
+              <div className={styles.certIcon} aria-hidden="true">
+                {cert.icon || '🏅'}
+              </div>
               <div className={styles.certYear}>{cert.year}</div>
               <div className={styles.certBody}>
                 <h3 className={styles.certName}>{cert.name}</h3>
