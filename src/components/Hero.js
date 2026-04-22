@@ -4,10 +4,12 @@ import { social } from '../data/portfolio';
 
 const TITLES = [
   'Web3 Builder',
-  'Blockchain Engineer',
+  'Blockchain Architect',
   'Full-Stack Developer',
+  'Solana Developer',
   'DeFi Protocol Architect',
   'Quantum-Resistant Builder',
+  'Open Source Creator',
 ];
 
 export default function Hero() {
@@ -106,6 +108,12 @@ export default function Hero() {
             </svg>
             SOLQ Protocol
           </a>
+          <a href="https://github.com/nayrbryanGaming/QUANTCOIN" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            QUANTCOIN
+          </a>
           <a href="mailto:Vincentius.kwandou@gmail.com" className="btn btn-ghost">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
@@ -134,10 +142,10 @@ export default function Hero() {
         {/* Stats row */}
         <div className={styles.statsRow}>
           {[
-            { num: '2', label: 'Flagship Projects' },
-            { num: '1T', label: 'TPS Target (QUANTCOIN)' },
-            { num: 'Live', label: 'SOLQ on Mainnet' },
-            { num: '∞', label: 'Building' },
+            { num: '1T', label: 'TPS (QUANTCOIN)' },
+            { num: 'Live', label: 'SOLQ Protocol' },
+            { num: '4', label: 'Design Iterations' },
+            { num: '∞', label: 'Building Mode' },
           ].map((s, i) => (
             <div key={i} className={styles.stat}>
               <span className={styles.statNum}>{s.num}</span>

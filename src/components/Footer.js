@@ -13,6 +13,10 @@ export default function Footer() {
           <p className={styles.copy}>
             © {year} Vincentius Bryan Kwandou. All rights reserved.
           </p>
+          <div className={styles.version}>
+            <span className={styles.versionDot} />
+            Ultimate Consolidated Edition — Synthesis of 4 Professional Architectures
+          </div>
         </div>
         <div className={styles.right}>
           <span className={styles.built}>
