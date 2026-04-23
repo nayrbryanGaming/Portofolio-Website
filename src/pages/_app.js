@@ -6,9 +6,11 @@ export default function App({ Component, pageProps }) {
 
   useEffect(() => {
     setMounted(true);
-    // Check saved theme preference
-    const saved = localStorage.getItem('theme') || 'dark';
-    document.documentElement.setAttribute('data-theme', saved);
+    // Check saved theme and proMode preference
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    const savedProMode = localStorage.getItem('proMode') || 'indigo';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.documentElement.setAttribute('data-pro-mode', savedProMode);
   }, []);
 
   if (!mounted) return null;
