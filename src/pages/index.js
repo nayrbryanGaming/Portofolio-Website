@@ -13,24 +13,13 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>nayrbryan — Web3 Builder & Full-Stack Developer</title>
-        <meta name="description" content="Vincentius Bryan Kwandou — Building quantum-resistant blockchains (QUANTCOIN) and Solana payment infrastructure (SOLQ). Web3 Builder & Full-Stack Developer from Indonesia." />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta property="og:title" content="nayrbryan — Web3 Builder & Full-Stack Developer" />
-        <meta property="og:description" content="Building on-chain. Living off-chain. Shipping real. QUANTCOIN & SOLQ creator." />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:creator" content="@nayrbryanGaming" />
-        <meta name="keywords" content="nayrbryan, bryankwandou, web3, blockchain, solana, quantcoin, solq, developer, indonesia, defi, rust, nextjs" />
-        <meta name="build-id" content="2026-04-23-18-08" />
+        <title>nayrbryan — Ultimate Consolidated Portfolio</title>
+        <meta name="description" content="The synthesis of 4 legendary designs. Web3 Builder & Full-Stack Developer." />
       </Head>
 
-      {/* Noise grain overlay */}
       <div className={styles.noise} />
       <div className="grid-bg" />
-      <div className="blob blob-1" />
-      <div className="blob blob-2" />
-      <div className="blob blob-3" />
-
+      
       <Navbar />
       <main>
         <Hero />
@@ -41,6 +30,26 @@ export default function Home() {
         <Contact />
       </main>
       <Footer />
+
+      <style jsx global>{`
+        :root {
+          --accent: #6366f1;
+          --bg: #030303;
+          --text: #ffffff;
+        }
+        body {
+          background: var(--bg);
+          color: var(--text);
+          overflow-x: hidden;
+        }
+        .grid-bg {
+          position: fixed;
+          inset: 0;
+          background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+          background-size: 40px 40px;
+          z-index: -1;
+        }
+      `}</style>
     </>
   );
 }
