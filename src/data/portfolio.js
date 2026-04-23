@@ -102,29 +102,29 @@ export const projects = [
   },
   {
     id: 3,
+    name: "POCKETLEDGER",
+    tagline: "Ultra-Fast Personal Finance & Recurring Engine",
+    description: "Production-grade personal finance application engineered for high-performance accounting. Features a custom recurring transaction engine, deterministic currency formatting, and state-of-the-art Flutter architecture. Designed for 100% data integrity and zero-latency financial tracking.",
+    tech: ["Flutter", "Dart", "Recurring Engine", "SQLite", "Financial Models"],
+    github: "https://github.com/nayrbryanGaming/POCKETLEDGER",
+    live: null,
+    status: "Production Hardening",
+    featured: true,
+    badge: "📱 MVP READY",
+    highlight: "Google Play Store Ready Accounting Infrastructure",
+  },
+  {
+    id: 4,
     name: "Portfolio Website",
     tagline: "Modern, Modular, & High-Impact",
-    description: "The current portfolio you are viewing — built with Next.js 14, CSS Modules, and Framer Motion. Engineered for maximum performance and professional aesthetic. Features deep dark mode, responsive design, and SEO optimization.",
+    description: "The current portfolio you are viewing — built with Next.js 14, CSS Modules, and Framer Motion. Engineered for maximum performance and professional aesthetic. Features 3 Legendary Programmer modes and deep dark mode optimization.",
     tech: ["Next.js 14", "CSS Modules", "React", "Vercel", "Framer Motion"],
     github: "https://github.com/nayrbryanGaming/Portofolio-Website",
     live: "https://nayrbryanGaming.vercel.app",
     status: "Live",
     featured: false,
     badge: "🚀 LIVE",
-    highlight: "Crafted for recruiters & developers",
-  },
-  {
-    id: 4,
-    name: "More Projects",
-    tagline: "Building the Future",
-    description: "Continuously shipping at the intersection of Web3, AI, and sovereign infrastructure. Follow my GitHub for the latest experiments, open-source contributions, and private repositories becoming public.",
-    tech: ["Web3", "AI", "Infrastructure", "Open Source"],
-    github: "https://github.com/nayrbryanGaming",
-    live: null,
-    status: "In Progress",
-    featured: false,
-    badge: "🔭 EXPLORING",
-    highlight: "Daily commits, daily growth",
+    highlight: "Synthesized for maximum career impact",
   },
 ];
 
@@ -195,8 +195,8 @@ export const certifications = [
 ];
 
 export const stats = [
-  { label: "GitHub Repos", value: "10+", icon: "📁" },
-  { label: "Projects Shipped", value: "2", icon: "🚀" },
-  { label: "Chains Worked On", value: "Solana + EVM", icon: "⛓️" },
-  { label: "TPS Target (QUANTCOIN)", value: "1T", icon: "⚡" },
+  { label: "Design Iterations", value: "4", icon: "🎨" },
+  { label: "Synthesis Version", value: "1.0.0", icon: "✨" },
+  { label: "Project Value (Est.)", value: "$907K", icon: "💎" },
+  { label: "API Tokens Invested", value: "950K", icon: "⚡" },
 ];
