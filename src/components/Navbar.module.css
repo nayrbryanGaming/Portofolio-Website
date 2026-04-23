@@ -87,7 +87,34 @@
 .right {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.proModeBtn {
+  display: flex;
+  align-items: center;
   gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.proModeBtn:hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.proModeLabel {
+  display: inline-block;
+  min-width: 60px;
+  text-align: left;
 }
 
 .themeBtn {
@@ -143,6 +170,8 @@
   .menuBtn {
     display: flex;
   }
+
+  .proModeLabel { display: none; }
 
   .links {
     display: none;
