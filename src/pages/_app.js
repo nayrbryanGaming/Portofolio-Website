@@ -1,6 +1,8 @@
 import '../styles/globals.css';
 import { useEffect, useState } from 'react';
 
+import VersionSwitcher from '../components/VersionSwitcher';
+
 export default function App({ Component, pageProps }) {
   const [mounted, setMounted] = useState(false);
 
@@ -15,5 +17,10 @@ export default function App({ Component, pageProps }) {
 
   if (!mounted) return null;
 
-  return <Component {...pageProps} />;
+  return (
+    <>
+      <Component {...pageProps} />
+      <VersionSwitcher />
+    </>
+  );
 }

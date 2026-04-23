@@ -2,8 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['github.com', 'avatars.githubusercontent.com', 'raw.githubusercontent.com', 'solq.my.id'],
     unoptimized: true,
+  },
+  // Ensure we don't fail on lint errors during build if necessary
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 };
 

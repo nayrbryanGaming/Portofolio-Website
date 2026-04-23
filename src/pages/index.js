@@ -21,6 +21,7 @@ export default function Home() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:creator" content="@nayrbryanGaming" />
         <meta name="keywords" content="nayrbryan, bryankwandou, web3, blockchain, solana, quantcoin, solq, developer, indonesia, defi, rust, nextjs" />
+        <meta name="build-id" content="2026-04-23-18-08" />
       </Head>
 
       {/* Noise grain overlay */}

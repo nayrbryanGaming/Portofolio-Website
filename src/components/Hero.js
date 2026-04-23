@@ -35,6 +35,17 @@ export default function Hero() {
   }, [displayed, deleting, titleIdx]);
 
   useEffect(() => {
+    const handleMouseMove = (e) => {
+      const x = e.clientX;
+      const y = e.clientY;
+      document.documentElement.style.setProperty('--mouse-x', `${x}px`);
+      document.documentElement.style.setProperty('--mouse-y', `${y}px`);
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  useEffect(() => {
     const t = setInterval(() => setCursorVisible(v => !v), 530);
     return () => clearInterval(t);
   }, []);
