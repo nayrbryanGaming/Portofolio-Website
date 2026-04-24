@@ -6,6 +6,7 @@ import Projects from '../components/Projects';
 import Skills from '../components/Skills';
 import Certs from '../components/Certs';
 import Contact from '../components/Contact';
+import Synthesis from '../components/Synthesis';
 import Footer from '../components/Footer';
 import styles from '../styles/Home.module.css';
 
@@ -26,32 +27,7 @@ export default function Home() {
         <About />
         <Projects />
         <Skills />
-        
-        {/* Synthesis Section: System Architecture */}
-        <section className={styles.synthesis}>
-          <div className="container">
-            <h2 className="section-title">Ultimate <span>Synthesis</span></h2>
-            <p className="section-subtitle">Combining the best practices of 4 design iterations into 1 production-hardened system.</p>
-            <div className={styles.synthGrid}>
-              <div className={styles.synthCard}>
-                <div className={styles.synthIcon}>🛡️</div>
-                <h3>Post-Quantum Core</h3>
-                <p>NIST Level 5 cryptography integration for future-proof security.</p>
-              </div>
-              <div className={styles.synthCard}>
-                <div className={styles.synthIcon}>⚡</div>
-                <h3>1T TPS Engine</h3>
-                <p>High-sharding Layer 1 architecture for massive scalability.</p>
-              </div>
-              <div className={styles.synthCard}>
-                <div className={styles.synthIcon}>💎</div>
-                <h3>$907K Precision</h3>
-                <p>Engineered with the meticulous standards of world-class backend architects.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
+        <Synthesis />
         <Certs />
         <Contact />
       </main>

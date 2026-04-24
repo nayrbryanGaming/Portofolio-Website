@@ -15,12 +15,10 @@ export default function App({ Component, pageProps }) {
     document.documentElement.setAttribute('data-pro-mode', savedProMode);
   }, []);
 
-  if (!mounted) return null;
-
   return (
     <>
       <Component {...pageProps} />
-      <VersionSwitcher />
+      {mounted && <VersionSwitcher />}
     </>
   );
 }
