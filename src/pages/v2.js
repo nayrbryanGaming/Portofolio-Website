@@ -1,70 +1,73 @@
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
-import { PROJECTS, SKILLS, CERTS, SOCIALS } from '../data/portfolioData';
 
-// Version 2: Modern Glow Design
+// Version 2: Emerald Quantum Design (Programmer 2)
 export default function Version2() {
   const [theme, setTheme] = useState('dark');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-pro-mode', 'emerald');
+    return () => document.documentElement.removeAttribute('data-pro-mode');
+  }, []);
 
   return (
     <div className="v2-theme">
       <Head>
-        <title>Bryan Kwandou — V2 Modern Glow</title>
+        <title>Bryan Kwandou — V2 Emerald Quantum</title>
       </Head>
       
-      <div className="glow-container">
-        <div className="glow-orb" />
-        <nav className="nav">
-          <div className="container">
-            <span className="logo">BRYAN.V2</span>
+      <nav className="navbar">
+        <div className="container">
+          <div className="navbar-inner">
+            <a href="/" className="nav-logo">nayrbryan_v2</a>
+            <div className="nav-right">
+              <span className="badge badge-live">PRO_MODE: EMERALD</span>
+            </div>
           </div>
-        </nav>
+        </div>
+      </nav>
 
-        <main className="container">
+      <main style={{ paddingTop: '120px', minHeight: '100vh' }}>
+        <div className="container">
           <section className="hero">
-            <div className="badge">VERSION 2 — MODERN GLOW</div>
-            <h1 className="title">Backend Excellence<br /><span>On-Chain.</span></h1>
+            <div className="section-label">Version 2.0</div>
+            <h1 className="hero-name">Emerald <span>Quantum</span></h1>
+            <p className="hero-desc">
+                High-sharding Layer 1 architecture. Engineered for the quantum epoch. 
+                Designed by the world&apos;s second best backend architect.
+            </p>
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="stat-value">1T</div>
+                    <div className="stat-label">TPS ENGINE</div>
+                </div>
+                <div className="stat-card">
+                    <div className="stat-value">NIST 5</div>
+                    <div className="stat-label">CRYPTO STANDARDS</div>
+                </div>
+            </div>
           </section>
+        </div>
+      </main>
 
-          <div className="grid">
-            {PROJECTS.map(p => (
-              <div key={p.id} className="card">
-                <div className="card-icon">{p.icon}</div>
-                <h4>{p.title}</h4>
-                <p>{p.desc}</p>
-              </div>
-            ))}
-          </div>
-        </main>
-      </div>
-
-      <style jsx global>{`
+      <style jsx>{`
         .v2-theme {
-          --bg: #050505;
-          --accent: #00f2ff;
-          --text: #ffffff;
           background: var(--bg);
-          color: var(--text);
-          font-family: 'Syne', sans-serif;
+          color: var(--text-primary);
+          min-height: 100vh;
         }
-        .glow-orb {
-          position: fixed;
-          top: -100px;
-          right: -100px;
-          width: 400px;
-          height: 400px;
-          background: var(--accent);
-          filter: blur(150px);
-          opacity: 0.2;
-          z-index: 0;
-        }
-        .container { max-width: 1000px; margin: 0 auto; padding: 40px 20px; position: relative; z-index: 1; }
-        .title { font-size: 4rem; font-weight: 800; line-height: 1; }
-        .title span { color: var(--accent); }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 60px; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 24px; transition: 0.3s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-5px); }
-        .badge { background: var(--accent); color: #000; padding: 4px 12px; border-radius: 100px; font-weight: 700; font-size: 12px; display: inline-block; margin-bottom: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+        .navbar { position: fixed; top: 0; width: 100%; z-index: 100; padding: 24px 0; border-bottom: 1px solid var(--border); }
+        .navbar-inner { display: flex; justify-content: space-between; align-items: center; }
+        .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem; color: var(--accent); }
+        .hero { padding: 60px 0; }
+        .hero-name { font-size: clamp(4rem, 10vw, 6rem); font-weight: 800; line-height: 1; margin-bottom: 24px; }
+        .hero-name span { color: var(--accent); display: block; }
+        .hero-desc { font-size: 1.2rem; color: var(--text-secondary); max-width: 600px; margin-bottom: 40px; line-height: 1.6; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border); padding: 30px; border-radius: 20px; }
+        .stat-value { font-size: 2.5rem; font-weight: 800; color: var(--accent); }
+        .stat-label { font-size: 0.8rem; letter-spacing: 0.1em; color: var(--text-muted); }
       `}</style>
     </div>
   );

@@ -1,0 +1,7 @@
+{
+  "name": "nayrbryangaming",
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "installCommand": "npm install",
+  "devCommand": "next dev"
+}
