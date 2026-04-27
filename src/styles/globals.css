@@ -65,3 +65,34 @@ body {
 .text-glow-purple {
   text-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
 }
+
+/* ─── Ticker / Marquee ────────────────────────── */
+.ticker-wrap {
+  @apply overflow-hidden relative;
+}
+.ticker-content {
+  display: flex;
+  gap: 3rem;
+  animation: ticker-scroll 28s linear infinite;
+  white-space: nowrap;
+}
+.ticker-wrap:hover .ticker-content { animation-play-state: paused; }
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ─── Stat Counter ────────────────────────────── */
+.stat-number {
+  animation: count-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(12px) scale(0.92); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ─── Metric Value ────────────────────────────── */
+.metric-value {
+  display: inline-block;
+}
