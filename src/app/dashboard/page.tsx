@@ -480,6 +480,33 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleDemoInsurance() {
+    if (!connected || !publicKey) {
+      toast.error('Hubungkan wallet Phantom Anda terlebih dahulu', { icon: '🔗' })
+      return
+    }
+    if (buyingInsurance) return
+    setBuyingInsurance(true)
+    const loadingToast = toast.loading('Memproses simulasi polis...', {
+      style: { background: '#0a1628', color: '#fff', border: '1px solid #10b981' }
+    })
+    await new Promise(r => setTimeout(r, 2200))
+    const demoId  = `DEMO-${Date.now().toString(36).toUpperCase().slice(-6)}`
+    const demoTx  = `SIM${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2,8).toUpperCase()}`
+    const now     = new Date()
+    const end     = new Date(now); end.setDate(now.getDate() + INSURANCE_ORDER.coverageDays)
+    const farmerPays = selectedHectares * INSURANCE_ORDER.premiumPerHectareUsdc * 0.5
+    setActivePolicy(true)
+    setPolicyId(demoId)
+    setPolicyTx(demoTx)
+    setPremiumUsdc(farmerPays)
+    setMaxPayoutUsdc(INSURANCE_ORDER.payoutPerHectareUsdc * selectedHectares)
+    setCoverageLabel(formatCoveragePeriod(now.toISOString(), end.toISOString()))
+    toast.dismiss(loadingToast)
+    toast.success(`Demo polis ${demoId} aktif! Petani membayar $${farmerPays.toFixed(2)} USDC (50% subsidi).`, { icon: '🛡️', duration: 6000 })
+    setBuyingInsurance(false)
+  }
+
   const maxRain = Math.max(...weather.daily.map(d => d.rainfallMm), 1)
   const totalRain7d = weather.daily.reduce((sum, day) => sum + day.rainfallMm, 0)
 
@@ -814,19 +841,23 @@ export default function DashboardPage() {
                   </div>
 
                   <button
-                    onClick={handleBuyInsurance}
-                    disabled={buyingInsurance || !connected || programReady !== true}
-                    className={`w-full relative group overflow-hidden rounded-xl ${buyingInsurance || !connected || programReady !== true ? 'opacity-70 cursor-not-allowed' : ''}`}
+                    onClick={connected && programReady === false ? handleDemoInsurance : handleBuyInsurance}
+                    disabled={buyingInsurance || !connected}
+                    className={`w-full relative group overflow-hidden rounded-xl ${buyingInsurance || !connected ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
-                    <div className={`absolute inset-0 w-full h-full transition-all duration-300 ease-out ${connected ? 'bg-gradient-to-r from-emerald-600 to-teal-500' : 'bg-slate-800'}`}></div>
+                    <div className={`absolute inset-0 w-full h-full transition-all duration-300 ease-out ${
+                      connected && programReady === false ? 'bg-gradient-to-r from-amber-600 to-orange-500'
+                      : connected ? 'bg-gradient-to-r from-emerald-600 to-teal-500'
+                      : 'bg-slate-800'
+                    }`}></div>
                     <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-emerald-500 to-teal-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out blur-[20px]"></div>
                     <span className="relative flex items-center justify-center gap-2 py-4 px-6 text-sm font-bold text-white tracking-wide">
                       {buyingInsurance ? (
-                        <>Memproses Pembelian <Loader2 size={16} className="animate-spin" /></>
+                        <>Memproses... <Loader2 size={16} className="animate-spin" /></>
                       ) : programReady === null ? (
                         <>Verifikasi Program On-Chain...</>
-                      ) : programReady === false ? (
-                        <>Program Belum Live di Devnet</>
+                      ) : connected && programReady === false ? (
+                        <>🎮 Demo: Aktifkan Proteksi</>
                       ) : connected ? (
                         <>Beli Proteksi Sekarang <ArrowRight size={16} /></>
                       ) : (
@@ -834,9 +865,9 @@ export default function DashboardPage() {
                       )}
                     </span>
                   </button>
-                  {programReady === false && (
-                    <p className="text-[10px] text-center text-amber-400 font-bold uppercase tracking-wider">
-                      Program ID {PROGRAM_ID_STR.slice(0,8)}... belum executable di Devnet. Pembelian polis dikunci sampai deploy valid selesai.
+                  {programReady === false && connected && (
+                    <p className="text-[10px] text-center text-slate-500 font-mono">
+                      Mode Simulasi Devnet · Klik untuk demo end-to-end
                     </p>
                   )}
                 </div>
