@@ -21,9 +21,9 @@ const RISK_COLOR: Record<string, string> = {
   CRITICAL: 'text-red-400     bg-red-900/30     border-red-800/50',
 }
 
-const FV = (delay = 0) => ({
+const FV = (delay = 0): any => ({
   initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+  animate: { opacity: 1, y: 0, transition: { delay, duration: 0.4, ease: 'easeOut' } },
 })
 
 export default function FarmsPage() {

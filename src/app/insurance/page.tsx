@@ -15,9 +15,9 @@ const POLICIES = [
   { id: 'POL-2119', farm: 'Kebun Pala Banda',    crop: 'Pala',          trigger: '> 250mm / 7 hari', coverage: 3200, premium: 96,  expires: '20 MAR 2026', status: 'Triggered', triggerProbPct: 98, daysToWindow: 0  },
 ]
 
-const FV = (delay = 0) => ({
+const FV = (delay = 0): any => ({
   initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+  animate: { opacity: 1, y: 0, transition: { delay, duration: 0.4, ease: 'easeOut' } },
 })
 
 function StatusBadge({ status }: { status: string }) {

@@ -44,9 +44,9 @@ const COOPERATIVES = [
   },
 ]
 
-const FV = (delay = 0) => ({
+const FV = (delay = 0): any => ({
   initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { delay, duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+  animate: { opacity: 1, y: 0, transition: { delay, duration: 0.4, ease: 'easeOut' } },
 })
 
 export default function CooperativesPage() {

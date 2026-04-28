@@ -1,231 +1,93 @@
-'use client'
+﻿'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
-import { Shield, Lock, Activity, TrendingUp, AlertTriangle, Briefcase, Zap, Database, ArrowUpRight, RefreshCw, Loader2 } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Connection, PublicKey, Transaction, TransactionInstruction } from '@solana/web3.js'
 import { Buffer } from 'buffer'
-import { useWallet, ConnectWalletButton } from '../../providers/WalletProvider'
-import Sidebar from '../../components/Sidebar'
-import Link from 'next/link'
+import { motion } from 'framer-motion'
+import { AlertTriangle, ArrowUpRight, Briefcase, Loader2, RefreshCw, Shield, TrendingUp, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { PROGRAM_ID_STR, RPC_URL } from '../../utils/constants'
+import Sidebar from '../../components/Sidebar'
+import { ConnectWalletButton, useWallet } from '../../providers/WalletProvider'
 import { getApiUrl } from '../../utils/api'
+import { PROGRAM_ID_STR, RPC_URL } from '../../utils/constants'
 import { isProtocolProgramDeployed } from '../../utils/solana'
-import { useSim } from '../../contexts/SimulationContext'
-
-// Simulated baseline metrics — shown when backend unreachable
-const SIM_POOL_STATS = {
-  tvlUsdc:        18_450,
-  claimsPaidUsdc: 4_250,
-  activePolicies: 5,
-  defaultRate:    '8.4%',
-  avgApy:         9.4,
-}
 
 const STAKE_MEMO_PROGRAM_ID = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'
-const LOCAL_STAKE_KEY_PREFIX = 'nusa_harvest_latest_stake_'
-const TX_SIGNATURE_REGEX = /^[1-9A-HJ-NP-Za-km-z]{80,100}$/
 
-type StakeMvpApiResponse = {
-  success?: boolean
-  degraded?: boolean
-  warning?: string
-  error?: string
-  data?: {
-    investmentId?: string
-    amountUsdc?: number
-    txSignature?: string
-    stakedAt?: string
-  }
-}
-
-type LocalStakeSnapshot = {
-  amountUsdc: number
-  txSignature: string
-  stakedAt: string
-  investmentId?: string
-}
-
-function getLocalStakeKey(walletAddress: string): string {
-  return `${LOCAL_STAKE_KEY_PREFIX}${walletAddress}`
-}
-
-function isLikelyTxSignature(value: string): boolean {
-  return TX_SIGNATURE_REGEX.test(value)
-}
-
-function clearLocalStake(walletAddress: string): void {
-  localStorage.removeItem(getLocalStakeKey(walletAddress))
-}
-
-function readLocalStake(walletAddress: string): LocalStakeSnapshot | null {
-  try {
-    const raw = localStorage.getItem(getLocalStakeKey(walletAddress))
-    if (!raw) return null
-
-    const parsed = JSON.parse(raw) as LocalStakeSnapshot
-    if (!parsed.txSignature || !isLikelyTxSignature(parsed.txSignature)) return null
-    return parsed
-  } catch {
-    return null
-  }
-}
-
-function writeLocalStake(walletAddress: string, payload: LocalStakeSnapshot): void {
-  localStorage.setItem(getLocalStakeKey(walletAddress), JSON.stringify(payload))
-}
-
-function getExplorerTxUrl(signature: string): string {
-  return `https://explorer.solana.com/tx/${signature}?cluster=devnet`
-}
-
-interface PoolStats {
+type PoolStats = {
   tvlUsdc: number
   claimsPaidUsdc: number
   activePolicies: number
-  defaultRate: string
-  oracleLatency: string
-  solPriceIdr: number | null
-  avgApy: number | null
+  avgApy: number
   backendConnected: boolean
   loading: boolean
-  lastUpdated: string | null
+  updatedAt: string
+}
+
+function toNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+function usd(value: number): string {
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export default function PoolsPage() {
-  const { connected, usdcBalance, publicKey, signAndSendTransaction } = useWallet()
-  const sim = useSim()
-  const [stakeAmount, setStakeAmount] = useState<string>('')
-  const [staking, setStaking] = useState(false)
-  const [latestStake, setLatestStake] = useState<LocalStakeSnapshot | null>(null)
+  const { connected, publicKey, usdcBalance, signAndSendTransaction } = useWallet()
+
   const [programReady, setProgramReady] = useState<boolean | null>(null)
   const [stats, setStats] = useState<PoolStats>({
     tvlUsdc: 0,
     claimsPaidUsdc: 0,
     activePolicies: 0,
-    defaultRate: '0.00%',
-    oracleLatency: '0ms',
-    solPriceIdr: null,
-    avgApy: null,
+    avgApy: 0,
     backendConnected: false,
     loading: true,
-    lastUpdated: null
+    updatedAt: '-',
   })
+  const [stakeAmount, setStakeAmount] = useState('')
+  const [staking, setStaking] = useState(false)
+  const [lastSignature, setLastSignature] = useState<string | null>(null)
 
-  // Fetch pool metrics from backend + fallback to on-chain RPC and public market feeds.
   const fetchStats = useCallback(async () => {
-    setStats(prev => ({ ...prev, loading: true }))
+    setStats((prev) => ({ ...prev, loading: true }))
+
+    const metricsApi = getApiUrl('/api/pool/metrics')
+    if (!metricsApi) {
+      setStats((prev) => ({ ...prev, loading: false, backendConnected: false, updatedAt: 'API URL not configured' }))
+      return
+    }
+
     try {
-      const start = Date.now()
-      await fetch('https://api.open-meteo.com/v1/forecast?latitude=-7.25&longitude=112.75&current=temperature_2m')
-      const latency = Date.now() - start
+      const res = await fetch(metricsApi, { cache: 'no-store' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
-      const metricsApiUrl = getApiUrl('/api/pool/metrics')
-      if (metricsApiUrl) {
-        const metricsRes = await fetch(metricsApiUrl)
-        if (metricsRes.ok) {
-          const metricsPayload = await metricsRes.json()
-          if (metricsPayload?.success && metricsPayload?.data) {
-            const data = metricsPayload.data
-            const totalPolicies = typeof data.insurance?.totalPolicies === 'number' ? data.insurance.totalPolicies : 0
-            const totalClaims = typeof data.insurance?.totalClaims === 'number' ? data.insurance.totalClaims : 0
+      const payload = await res.json()
+      if (!payload?.success || !payload?.data) throw new Error('Invalid payload')
 
-            setStats({
-              tvlUsdc: typeof data.finance?.totalTvlUsdc === 'number' ? data.finance.totalTvlUsdc : 0,
-              claimsPaidUsdc: typeof data.finance?.totalClaimsPaidUsdc === 'number' ? data.finance.totalClaimsPaidUsdc : 0,
-              activePolicies: typeof data.insurance?.activePolicies === 'number' ? data.insurance.activePolicies : 0,
-              defaultRate: totalPolicies > 0 ? `${((totalClaims / totalPolicies) * 100).toFixed(2)}%` : '0.00%',
-              oracleLatency: `${latency}ms`,
-              solPriceIdr: typeof data.network?.solPriceIdr === 'number' ? data.network.solPriceIdr : null,
-              avgApy: typeof data.finance?.avgApy === 'number' ? data.finance.avgApy : null,
-              backendConnected: true,
-              loading: false,
-              lastUpdated: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
-            })
-            return
-          }
-        }
-      }
-
-      const [rpcData, cgData] = await Promise.all([
-        fetch('https://api.devnet.solana.com', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'getBalance',
-            params: [PROGRAM_ID_STR]
-          })
-        }).then((res) => (res.ok ? res.json() : null)),
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd,idr')
-          .then((res) => (res.ok ? res.json() : null))
-      ])
-
-      const lamports = typeof rpcData?.result?.value === 'number' ? rpcData.result.value : 0
-      const solBalance = lamports / 1e9
-      const solPriceUsd = typeof cgData?.solana?.usd === 'number' ? cgData.solana.usd : 0
-      const solPriceIdr = typeof cgData?.solana?.idr === 'number' ? cgData.solana.idr : null
-
-      const tvlUsd = solBalance * solPriceUsd
-
-      // Use simulated baseline when backend is unreachable; never show $0
-      const simTvl = tvlUsd > 1 ? tvlUsd : SIM_POOL_STATS.tvlUsdc
+      const data = payload.data
       setStats({
-        tvlUsdc:        simTvl,
-        claimsPaidUsdc: SIM_POOL_STATS.claimsPaidUsdc,
-        activePolicies: SIM_POOL_STATS.activePolicies,
-        defaultRate:    SIM_POOL_STATS.defaultRate,
-        oracleLatency:  `${latency}ms`,
-        solPriceIdr,
-        avgApy:         SIM_POOL_STATS.avgApy,
-        backendConnected: false,
+        tvlUsdc: toNumber(data.finance?.totalTvlUsdc),
+        claimsPaidUsdc: toNumber(data.finance?.totalClaimsPaidUsdc),
+        activePolicies: toNumber(data.insurance?.activePolicies),
+        avgApy: toNumber(data.finance?.avgApy),
+        backendConnected: true,
         loading: false,
-        lastUpdated: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB (sim)'
+        updatedAt: new Date().toLocaleTimeString('id-ID'),
       })
-    } catch (e) {
-      console.error('Stats fetch failed:', e)
-      setStats(prev => ({
-        ...prev,
-        tvlUsdc:        prev.tvlUsdc > 0 ? prev.tvlUsdc : SIM_POOL_STATS.tvlUsdc,
-        claimsPaidUsdc: prev.claimsPaidUsdc > 0 ? prev.claimsPaidUsdc : SIM_POOL_STATS.claimsPaidUsdc,
-        activePolicies: prev.activePolicies > 0 ? prev.activePolicies : SIM_POOL_STATS.activePolicies,
-        defaultRate:    prev.defaultRate !== '0.00%' ? prev.defaultRate : SIM_POOL_STATS.defaultRate,
-        avgApy:         prev.avgApy ?? SIM_POOL_STATS.avgApy,
-        loading: false,
-        lastUpdated: 'Offline · cache data'
-      }))
+    } catch {
+      setStats((prev) => ({ ...prev, loading: false, backendConnected: false, updatedAt: 'Fallback mode' }))
     }
   }, [])
 
   useEffect(() => {
-    fetchStats()
-    const interval = setInterval(fetchStats, 60000)
-    return () => clearInterval(interval)
+    void fetchStats()
+    const timer = window.setInterval(() => {
+      void fetchStats()
+    }, 30000)
+
+    return () => window.clearInterval(timer)
   }, [fetchStats])
-
-  useEffect(() => {
-    if (!publicKey) {
-      setLatestStake(null)
-      return
-    }
-
-    if (programReady !== true) {
-      setLatestStake(null)
-      if (programReady === false) clearLocalStake(publicKey)
-      return
-    }
-
-    const localStake = readLocalStake(publicKey)
-    if (!localStake) {
-      clearLocalStake(publicKey)
-      setLatestStake(null)
-      return
-    }
-
-    setLatestStake(localStake)
-  }, [publicKey, programReady])
 
   useEffect(() => {
     let cancelled = false
@@ -246,427 +108,209 @@ export default function PoolsPage() {
     }
   }, [])
 
-  const handleStake = async () => {
+  const handleStake = useCallback(async () => {
     if (!connected || !publicKey) {
       toast.error('Hubungkan wallet terlebih dahulu')
       return
     }
 
-    if (programReady === null) {
-      toast.error('Sedang memverifikasi status program pool on-chain. Coba lagi sebentar.')
+    if (programReady !== true) {
+      toast.error('Program pool belum siap di jaringan')
       return
     }
 
-    if (programReady === false) {
-      toast.error('Program pool belum terdeploy di Solana Devnet. Transaksi stake diblokir.')
+    const amount = Number(stakeAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error('Jumlah stake tidak valid')
       return
     }
 
-    const normalizedAmount = Number(stakeAmount)
-    if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
-      toast.error('Masukkan jumlah USDC yang valid')
-      return
-    }
-
-    if (usdcBalance !== null && normalizedAmount > usdcBalance) {
-      toast.error('Jumlah stake melebihi saldo USDC wallet Anda')
+    if (usdcBalance !== null && amount > usdcBalance) {
+      toast.error('Jumlah stake melebihi saldo USDC')
       return
     }
 
     if (staking) return
 
     setStaking(true)
-    const loadingToast = toast.loading('Menandatangani transaksi stake USDC...', {
-      style: { borderRadius: '12px', background: '#020617', color: '#fbbf24', border: '1px solid #fbbf24' }
-    })
+    const loadingToast = toast.loading('Menandatangani transaksi stake...')
 
     try {
       const connection = new Connection(RPC_URL, 'confirmed')
       const walletPubkey = new PublicKey(publicKey)
-      const memoPayload = `NUSA_HARVEST_STAKE|${publicKey}|${normalizedAmount.toFixed(2)}|${Date.now()}`
+      const memo = `NUSA_HARVEST_STAKE|${publicKey}|${amount.toFixed(2)}|${Date.now()}`
 
-      const memoInstruction = new TransactionInstruction({
+      const instruction = new TransactionInstruction({
         keys: [{ pubkey: walletPubkey, isSigner: true, isWritable: false }],
         programId: new PublicKey(STAKE_MEMO_PROGRAM_ID),
-        data: Buffer.from(memoPayload, 'utf8')
+        data: Buffer.from(memo, 'utf8'),
       })
 
-      const transaction = new Transaction().add(memoInstruction)
-      transaction.feePayer = walletPubkey
+      const tx = new Transaction().add(instruction)
+      tx.feePayer = walletPubkey
       const { blockhash } = await connection.getLatestBlockhash('confirmed')
-      transaction.recentBlockhash = blockhash
+      tx.recentBlockhash = blockhash
 
-      const signedResult = await signAndSendTransaction(transaction)
-      const txSignature = signedResult?.signature
-      if (!txSignature) {
-        throw new Error('Signature transaksi stake tidak ditemukan.')
+      const signed = await signAndSendTransaction(tx)
+      const signature = signed?.signature
+      if (!signature) throw new Error('Signature tidak ditemukan')
+
+      const confirmation = await connection.confirmTransaction(signature, 'confirmed')
+      if (confirmation.value.err) throw new Error('Transaksi gagal terkonfirmasi')
+
+      const stakeApi = getApiUrl('/api/pool/stake-mvp')
+      if (stakeApi) {
+        await fetch(stakeApi, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: publicKey,
+            amountUsdc: amount,
+            txSignature: signature,
+            poolSymbol: 'NH-RICE',
+          }),
+        }).catch(() => null)
       }
 
-      const confirmation = await connection.confirmTransaction(txSignature, 'confirmed')
-      if (confirmation.value.err) {
-        throw new Error('Transaksi stake gagal terkonfirmasi di jaringan.')
-      }
-
-      const stakeApiUrl = getApiUrl('/api/pool/stake-mvp')
-      let backendWarning = ''
-      let investmentId: string | undefined
-      let stakeTimestamp = new Date().toISOString()
-
-      if (stakeApiUrl) {
-        try {
-          const response = await fetch(stakeApiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              walletAddress: publicKey,
-              amountUsdc: normalizedAmount,
-              txSignature,
-              poolSymbol: 'NH-RICE'
-            })
-          })
-
-          const payload = (await response.json().catch(() => null)) as StakeMvpApiResponse | null
-          if (!response.ok || !payload?.success) {
-            backendWarning = payload?.error || payload?.warning || 'Sinkronisasi stake ke backend belum berhasil.'
-          } else {
-            investmentId = payload.data?.investmentId
-            if (payload.data?.stakedAt) stakeTimestamp = payload.data.stakedAt
-            if (payload.warning) backendWarning = payload.warning
-          }
-        } catch (backendError: any) {
-          backendWarning = backendError?.message || 'Backend tidak merespons saat mencatat stake.'
-        }
-      } else {
-        backendWarning = 'NEXT_PUBLIC_API_BASE_URL belum diset di deployment frontend.'
-      }
-
-      const localSnapshot: LocalStakeSnapshot = {
-        amountUsdc: normalizedAmount,
-        txSignature,
-        stakedAt: stakeTimestamp,
-        investmentId
-      }
-      writeLocalStake(publicKey, localSnapshot)
-      setLatestStake(localSnapshot)
-
+      setLastSignature(signature)
       setStakeAmount('')
-      setStats((prev) => ({
-        ...prev,
-        tvlUsdc: prev.tvlUsdc + normalizedAmount,
-        lastUpdated: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB'
-      }))
-      await fetchStats()
-
       toast.dismiss(loadingToast)
-      if (backendWarning) {
-        toast.success('Transaksi wallet terkonfirmasi. Sinkronisasi metrik backend sedang menyusul.', { icon: '✅' })
-      } else {
-        toast.success('Catatan stake tersimpan dan transaksi wallet terkonfirmasi.', { icon: '💼' })
-      }
+      toast.success('Stake berhasil dan tercatat on-chain')
+      await fetchStats()
     } catch (error: any) {
       toast.dismiss(loadingToast)
-      toast.error(error?.message || 'Transaksi stake gagal diproses')
+      toast.error(error?.message || 'Stake gagal diproses')
     } finally {
       setStaking(false)
     }
-  }
+  }, [connected, fetchStats, programReady, publicKey, signAndSendTransaction, stakeAmount, staking, usdcBalance])
 
-  const formatUSD = (val: number) => {
-    if (val === 0) return '$0.00'
-    if (val < 0.01) return `$${(val).toFixed(6)}`
-    return `$${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-  }
+  const health = useMemo(() => {
+    if (stats.loading) return 'SYNCING'
+    return stats.backendConnected ? 'LIVE' : 'FALLBACK'
+  }, [stats.backendConnected, stats.loading])
 
   return (
-    <div className="flex min-h-screen bg-[#02050a]">
+    <div className="flex min-h-screen bg-[#02050a] text-slate-100">
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="h-12 flex items-center justify-between px-8 border-b border-white/[0.05] sticky top-0 z-10 bg-[#02050a]/90 backdrop-blur shrink-0">
-          <div className="font-mono text-[11px] text-slate-500 flex items-center gap-2">
-            <span>Nusa Harvest</span><span className="text-slate-700">/</span><span className="text-white">Yield Pools</span>
-          </div>
-          <span className="font-mono text-[10px] px-2.5 py-1 rounded-[3px] border border-amber-900/40 bg-amber-950/20 text-amber-500 hidden sm:block">APY 8–12% · Simulation</span>
+        <div className="h-12 flex items-center justify-between px-8 border-b border-white/[0.05] sticky top-0 z-10 bg-[#02050a]/90 backdrop-blur">
+          <div className="font-mono text-[11px] text-slate-500">Nusa Harvest / Yield Pools</div>
+          <button onClick={() => void fetchStats()} className="p-2 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-all" title="Refresh pool stats" aria-label="Refresh pool stats">
+            <RefreshCw size={14} className={stats.loading ? 'animate-spin' : ''} />
+          </button>
         </div>
-        <div className="flex-1 relative overflow-auto">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/5 blur-[120px] -z-10 rounded-full pointer-events-none" />
 
-      <div className="px-8 pt-8 pb-16 max-w-5xl mx-auto">
-        <header className="mb-12">
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2 mb-4">
-            <div className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-[10px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-2">
-              <Briefcase size={12} /> AgroFi Liquidity Protocol
+        <div className="px-8 py-8 max-w-6xl w-full mx-auto">
+          <header className="mb-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full text-[10px] font-black text-amber-500 uppercase tracking-widest mb-4">
+              <Briefcase size={12} /> Liquidity Protocol
             </div>
-            {!stats.loading && (
-              <div className="px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                Diperbarui: {stats.lastUpdated}
-              </div>
-            )}
-          </motion.div>
-          <h1 className="text-5xl md:text-6xl font-black text-white mb-4 italic tracking-tighter">Yield <span className="text-amber-400 underline decoration-amber-500/20">Pools</span></h1>
-          <p className="text-slate-400 text-lg max-w-2xl font-medium leading-relaxed">
-            Staking TVL untuk disalurkan sebagai pinjaman produktif kepada jaringan Petani Koperasi. Dilindungi penuh oleh Asuransi Parametrik.
-          </p>
-        </header>
+            <h1 className="text-5xl font-black tracking-tight">Yield Pools</h1>
+            <p className="text-slate-400 mt-3 max-w-3xl">Staking TVL untuk pendanaan produktif dengan verifikasi transaksi on-chain.</p>
+          </header>
 
-        <div className="grid md:grid-cols-4 gap-4 mb-12">
-          {[
-            { title: 'Petani Wajib Asuransi', desc: 'Mitigasi 100% gagal bayar iklim.',   icon: Shield,    color: 'text-amber-400',  bg: 'bg-amber-500/10 border-amber-500/20'   },
-            { title: 'Kerjasama Koperasi',    desc: 'KYC & penyaluran via koperasi.',      icon: Briefcase, color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/20'     },
-            { title: 'Insurance On-Chain',    desc: 'Polis asuransi di-lock di SC.',        icon: Lock,      color: 'text-emerald-400',bg: 'bg-emerald-500/10 border-emerald-500/20'},
-            { title: '20% Reserve Cash',      desc: 'Reserve TVL untuk likuiditas.',       icon: Zap,       color: 'text-purple-400', bg: 'bg-purple-500/10 border-purple-500/20'  },
-          ].map((item, i) => {
-            const Icon = item.icon
-            return (
-              <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08, duration: 0.35, ease: [0.22,1,0.36,1] }}
-                className="hover-lift glass-panel p-5 rounded-2xl flex flex-col gap-3 group">
-                <div className={`p-2.5 rounded-xl border self-start ${item.bg}`}>
-                  <Icon className={item.color} size={20} />
+          <section className="grid md:grid-cols-4 gap-4 mb-8">
+            {[
+              { label: 'TVL', value: stats.loading ? 'Syncing...' : usd(stats.tvlUsdc), icon: <TrendingUp size={18} className="text-emerald-400" /> },
+              { label: 'Claims Paid', value: stats.loading ? 'Syncing...' : usd(stats.claimsPaidUsdc), icon: <Shield size={18} className="text-blue-400" /> },
+              { label: 'Active Policies', value: stats.loading ? 'Syncing...' : stats.activePolicies.toLocaleString('id-ID'), icon: <Shield size={18} className="text-amber-400" /> },
+              { label: 'Avg APY', value: stats.loading ? 'Syncing...' : `${stats.avgApy.toFixed(2)}%`, icon: <Zap size={18} className="text-purple-400" /> },
+            ].map((card, index) => (
+              <motion.div key={card.label} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.06 }} className="glass-panel p-5 rounded-2xl">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{card.label}</div>
+                  {card.icon}
                 </div>
-                <div>
-                  <h3 className="text-white font-bold text-xs uppercase tracking-widest">{item.title}</h3>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{item.desc}</p>
-                </div>
+                <div className="text-2xl font-black text-white tracking-tight">{card.value}</div>
               </motion.div>
-            )
-          })}
-        </div>
+            ))}
+          </section>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="glass-panel p-10 rounded-[48px] border border-white/5 bg-[#0a1628]/20 relative overflow-hidden">
-              <div className="flex justify-between items-start mb-10 pb-8 border-b border-white/5">
-                <div>
-                  <h2 className="text-3xl font-black text-white italic flex items-center gap-3">
-                    <TrendingUp className="text-emerald-400" /> Padi Ciherang Pool
-                  </h2>
-                  <p className="text-slate-500 mt-2 font-bold text-sm uppercase tracking-widest">
-                    APY Target: <span className="text-emerald-400">{stats.avgApy !== null ? `${stats.avgApy.toFixed(2)}%` : 'Fetching...'}</span> (USDC Stablecoin)
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className={`text-[10px] font-black px-3 py-1.5 rounded-xl border uppercase tracking-widest ${stats.backendConnected ? 'text-emerald-400 bg-emerald-400/10 border-emerald-500/20' : 'text-amber-400 bg-amber-400/10 border-amber-500/20'}`}>
-                    {stats.backendConnected ? 'Backend + Devnet' : 'Devnet Fallback'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-8 mb-10">
-                <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 group hover:border-amber-500/20 transition-all">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Program Balance (Devnet)</div>
-                  <div className="text-4xl font-black text-white mb-2 tracking-tighter">
-                    {stats.loading ? (
-                      <span className="text-slate-600 text-2xl flex items-center gap-2"><RefreshCw size={20} className="animate-spin" /> Memuat...</span>
-                    ) : (
-                      formatUSD(stats.tvlUsdc)
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-[10px] font-black text-amber-400 uppercase tracking-widest">
-                    <ArrowUpRight size={12} /> {stats.backendConnected ? 'Data dari backend protocol metrics' : 'Data dari Solana Devnet RPC'}
-                  </div>
-                </div>
-                <div className="bg-white/[0.02] p-6 rounded-3xl border border-white/5 group hover:border-blue-500/20 transition-all">
-                  <div className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Total Klaim Dibayar</div>
-                  <div className="text-4xl font-black text-white mb-2 tracking-tighter">
-                    {stats.loading ? (
-                      <span className="text-slate-600 text-2xl flex items-center gap-2"><RefreshCw size={20} className="animate-spin" /> Memuat...</span>
-                    ) : (
-                      formatUSD(stats.claimsPaidUsdc)
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest">
-                    <Shield size={12} /> Data sumber: tabel claim + pool aggregate
-                  </div>
+          <section className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 glass-panel p-6 rounded-3xl">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-lg font-black text-white">Stake USDC to Pool</h2>
+                <div className="text-[10px] font-black px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 uppercase tracking-widest">
+                  {health}
                 </div>
               </div>
 
               {!connected ? (
-                <div className="p-10 text-center border-2 border-dashed border-amber-500/20 bg-amber-500/5 rounded-[40px]">
-                  <AlertTriangle className="mx-auto text-amber-400 mb-6" size={48} />
-                  <h3 className="text-xl font-black text-white mb-2 uppercase tracking-tight">Hubungkan Wallet</h3>
-                  <p className="text-slate-500 text-sm mb-8 max-w-md mx-auto font-medium">
-                    Hubungkan Solana Wallet untuk menjadi Liquidity Provider di AgroFi Protocol.
-                  </p>
-                  <ConnectWalletButton className="mx-auto px-10 py-5 rounded-[20px] font-black uppercase tracking-widest text-sm bg-amber-500 text-amber-950 hover:bg-amber-400 transition-all shadow-[0_0_40px_rgba(245,158,11,0.2)] hover:scale-105" />
+                <div className="p-8 border border-dashed border-amber-500/30 rounded-2xl bg-amber-500/5 text-center">
+                  <AlertTriangle size={30} className="mx-auto text-amber-400 mb-3" />
+                  <p className="text-slate-300 mb-4">Hubungkan wallet untuk mulai stake.</p>
+                  <ConnectWalletButton className="mx-auto px-6 py-3 rounded-xl font-bold bg-amber-500 text-amber-950 hover:bg-amber-400 transition-all" />
                 </div>
               ) : (
-                <div className="space-y-6">
-                  <div className="flex justify-between text-xs font-black uppercase tracking-widest text-slate-500">
-                    <span>Jumlah Stake USDC</span>
-                    <span className="text-white">
-                      Saldo: {usdcBalance !== null ? usdcBalance.toLocaleString('en-US', {minimumFractionDigits: 2}) : '0.00'} USDC
-                    </span>
+                <div className="space-y-4">
+                  <div className="text-xs text-slate-500 font-bold uppercase tracking-widest">
+                    Saldo USDC: {usdcBalance !== null ? usdcBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '...'}
                   </div>
-                  <div className="relative group">
-                    <input 
-                      type="number" 
-                      value={stakeAmount}
-                      onChange={(e) => setStakeAmount(e.target.value)}
-                      placeholder="0.00"
+                  <div className="relative">
+                    <input
+                      type="number"
                       min="0"
-                      className="w-full bg-[#050b14]/80 border-2 border-white/10 rounded-2xl p-6 pr-24 text-white font-black text-2xl focus:outline-none focus:border-amber-500/50 focus:ring-4 focus:ring-amber-500/10 transition-all placeholder:text-slate-800"
+                      value={stakeAmount}
+                      onChange={(event) => setStakeAmount(event.target.value)}
+                      placeholder="0.00"
+                      className="w-full bg-[#050b14]/80 border-2 border-white/10 rounded-2xl p-5 pr-20 text-white font-black text-2xl focus:outline-none focus:border-amber-500/50"
                     />
-                    <button 
-                      onClick={() => usdcBalance && setStakeAmount(usdcBalance.toString())}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-amber-400 hover:text-amber-300 bg-amber-400/10 px-4 py-2.5 rounded-xl border border-amber-500/20 transition-all"
+                    <button
+                      onClick={() => {
+                        if (usdcBalance !== null) setStakeAmount(String(usdcBalance))
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-amber-400 bg-amber-400/10 px-3 py-2 rounded-xl border border-amber-500/20"
                     >
                       MAX
                     </button>
                   </div>
-                  <button 
-                    onClick={handleStake}
+                  <button
+                    onClick={() => void handleStake()}
                     disabled={staking || programReady !== true}
-                    className={`w-full py-6 rounded-2xl bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-yellow-950 font-black text-sm uppercase tracking-[0.3em] transition-all shadow-[0_0_50px_rgba(245,158,11,0.3)] hover:scale-[1.01] active:scale-95 ${staking || programReady !== true ? 'opacity-80 cursor-not-allowed' : ''}`}
+                    className={`w-full py-4 rounded-2xl bg-gradient-to-r from-amber-600 to-yellow-500 text-yellow-950 font-black text-sm uppercase tracking-widest transition-all ${staking || programReady !== true ? 'opacity-70 cursor-not-allowed' : 'hover:from-amber-500 hover:to-yellow-400'}`}
                   >
                     {staking ? (
                       <span className="inline-flex items-center gap-2">
-                        Memproses Stake <Loader2 size={16} className="animate-spin" />
+                        Memproses <Loader2 size={16} className="animate-spin" />
                       </span>
                     ) : programReady === null ? (
-                      'Verifikasi Program On-Chain...'
+                      'Verifikasi Program...'
                     ) : programReady === false ? (
-                      'Program Pool Belum Live'
+                      'Program Belum Live'
                     ) : (
-                      'Stake ke Pool Devnet'
+                      'Stake Sekarang'
                     )}
                   </button>
-                  {programReady === false && (
-                    <p className="text-[10px] text-center text-amber-400 font-bold uppercase tracking-widest">
-                      Program ID {PROGRAM_ID_STR.slice(0,8)}... belum executable di Devnet. Fitur stake dinonaktifkan sampai deploy valid selesai.
-                    </p>
-                  )}
-                  <p className="text-[10px] text-center text-slate-600 font-bold uppercase tracking-widest italic">
-                    Setiap stake memerlukan tanda tangan wallet dan verifikasi transaksi sebelum metrik diperbarui.
-                  </p>
-                  {programReady === true && latestStake && (
-                    <p className="text-[10px] text-center text-emerald-400 font-bold uppercase tracking-widest">
-                      Stake terakhir: {latestStake.amountUsdc.toFixed(2)} USDC •{' '}
-                      <a
-                        href={getExplorerTxUrl(latestStake.txSignature)}
-                        target="_blank"
-                        rel="noreferrer noopener"
-                        className="underline underline-offset-2 hover:text-emerald-300"
-                      >
-                        Tx {latestStake.txSignature.slice(0, 8)}...{latestStake.txSignature.slice(-6)}
-                      </a>
-                    </p>
-                  )}
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <div className="glass-panel p-8 rounded-[40px] border border-white/5 bg-white/[0.01]">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-black text-slate-400 flex items-center gap-2 uppercase tracking-widest"><Activity size={18}/> Protocol Health</h3>
-                <button
-                  onClick={fetchStats}
-                  title="Refresh pool stats"
-                  aria-label="Refresh pool stats"
-                  className="text-slate-600 hover:text-white transition-colors"
-                >
-                  <RefreshCw size={14} className={stats.loading ? 'animate-spin' : ''} />
-                </button>
-              </div>
-              <div className="space-y-6">
-                {[
-                  { label: 'Program TVL', value: stats.loading ? 'Memuat...' : formatUSD(stats.tvlUsdc), color: 'text-white' },
-                  { label: 'Active Policies', value: stats.loading ? 'Memuat...' : stats.activePolicies.toLocaleString('id-ID'), color: 'text-emerald-400' },
-                  { label: 'Oracle Latency', value: stats.loading ? 'Memuat...' : stats.oracleLatency, color: 'text-blue-400' },
-                  { label: 'Default Rate', value: stats.defaultRate, color: 'text-emerald-400' },
-                  { label: 'SOL Price (IDR)', value: stats.solPriceIdr ? `Rp ${stats.solPriceIdr.toLocaleString('id-ID')}` : 'Memuat...', color: 'text-amber-400' }
-                ].map((row, i) => (
-                  <div key={i} className="flex justify-between items-center text-xs pb-4 border-b border-white/5">
-                    <span className="text-slate-500 font-bold uppercase tracking-widest">{row.label}</span>
-                    <span className={`font-black ${row.color}`}>{row.value}</span>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-8">
-                <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-4">Program ID</div>
-                <Link 
-                  href={`https://explorer.solana.com/address/${PROGRAM_ID_STR}?cluster=devnet`} 
-                  target="_blank" 
-                  className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between group hover:bg-white/10 transition-all"
-                >
-                  <div className="text-[10px] font-mono text-slate-400">{PROGRAM_ID_STR.slice(0, 8)}...{PROGRAM_ID_STR.slice(-6)}</div>
-                  <ArrowUpRight size={14} className="text-slate-600 group-hover:text-amber-400 transition-all" />
-                </Link>
-              </div>
-            </div>
+            <div className="glass-panel p-6 rounded-3xl">
+              <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">On-chain Proof</h3>
+              <a
+                href={`https://explorer.solana.com/address/${PROGRAM_ID_STR}?cluster=devnet`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 text-emerald-300 hover:text-emerald-200 font-bold text-sm"
+              >
+                Program Explorer <ArrowUpRight size={14} />
+              </a>
 
-            <div className="p-8 rounded-[40px] bg-gradient-to-br from-indigo-900/60 to-slate-900 border border-indigo-500/20 relative overflow-hidden group">
-              <Database className="text-indigo-400 mb-6 group-hover:scale-110 transition-transform" size={40} />
-              <h4 className="text-xl font-black text-white mb-3 italic tracking-tight underline decoration-indigo-500/30">Investor Guard</h4>
-              <p className="text-xs text-indigo-200/60 leading-relaxed font-medium">
-                Polis asuransi petani terkunci secara programmatik sebagai penjamin likuiditas LP. Tidak ada risiko gagal bayar akibat bencana iklim.
-              </p>
-              <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full" />
+              {lastSignature && (
+                <div className="mt-4 text-xs text-slate-300 break-all">
+                  Signature terakhir:
+                  <a href={`https://explorer.solana.com/tx/${lastSignature}?cluster=devnet`} target="_blank" rel="noreferrer" className="block mt-1 text-emerald-300 underline underline-offset-2">
+                    {lastSignature}
+                  </a>
+                </div>
+              )}
+
+              <p className="text-[11px] text-slate-500 mt-6">Last updated: {stats.updatedAt}</p>
             </div>
-          </div>
+          </section>
         </div>
-
-        {/* ── Wallet Portfolio (shown when connected) ── */}
-        {connected && (
-          <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0,transition:{delay:0.1,duration:0.4}}}
-            className="mt-10 glass-panel p-8 rounded-[40px] border border-amber-500/20 bg-amber-950/10">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-black text-amber-400 uppercase tracking-widest flex items-center gap-2">
-                <TrendingUp size={16}/> Your Portfolio
-              </h3>
-              <div className="font-mono text-[10px] text-slate-500">
-                Total invested · <span className="text-white font-bold">${sim.totalInvestedUsdc.toLocaleString()} USDC</span>
-                &nbsp;·&nbsp; Est. ROI · <span className="text-emerald-400 font-bold">{sim.estimatedRoiPct}%</span>
-                &nbsp;·&nbsp; Risk · <span className={`font-bold ${sim.riskLevel==='LOW'?'text-emerald-400':sim.riskLevel==='MEDIUM'?'text-amber-400':'text-red-400'}`}>{sim.riskLevel}</span>
-              </div>
-            </div>
-            <div className="grid md:grid-cols-3 gap-4">
-              {sim.portfolioPositions.map((pos) => (
-                <div key={pos.poolId} className="p-5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                  <p className="font-mono text-[9.5px] uppercase tracking-widest text-slate-500 mb-2">{pos.poolId}</p>
-                  <p className="text-white font-bold text-sm mb-3">{pos.poolName}</p>
-                  <div className="grid grid-cols-3 gap-2 font-mono text-[10px]">
-                    <div><p className="text-slate-600 mb-0.5">Invested</p><p className="text-white">${pos.invested}</p></div>
-                    <div><p className="text-slate-600 mb-0.5">APY</p><p className="text-emerald-400">{pos.apy}%</p></div>
-                    <div><p className="text-slate-600 mb-0.5">Earned</p><p className="text-amber-400">+${pos.earned}</p></div>
-                  </div>
-                  <p className="font-mono text-[9px] text-slate-700 mt-2">Since {pos.joinedAt}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* ── Fund Flow ── */}
-        <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0,transition:{delay:0.2,duration:0.4}}}
-          className="mt-8 glass-panel p-8 rounded-[40px] border border-white/5">
-          <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-            <ArrowUpRight size={16} className="text-emerald-400"/> Fund Flow — Investor → Petani
-          </h3>
-          <div className="flex flex-col md:flex-row items-stretch gap-0">
-            {sim.fundFlow.map((step, i) => (
-              <div key={i} className="flex-1 flex flex-col md:flex-row items-center">
-                <div className="flex-1 p-4 rounded-[12px] border border-white/[0.06] bg-[#050b14]">
-                  <p className="font-mono text-[9px] uppercase tracking-widest text-slate-600 mb-1">{step.from} → {step.to}</p>
-                  <p className="font-display text-xl text-white">${step.amount.toLocaleString()}</p>
-                  <div className="flex items-center gap-1.5 mt-2">
-                    <span className={`w-1.5 h-1.5 rounded-full ${step.status==='completed'?'bg-emerald-400':step.status==='in-progress'?'bg-amber-400 animate-pulse':'bg-slate-600'}`}/>
-                    <span className="font-mono text-[9px] text-slate-500 capitalize">{step.status}</span>
-                  </div>
-                  <p className="font-mono text-[8.5px] text-slate-700 mt-1">{step.timestamp}</p>
-                </div>
-                {i < sim.fundFlow.length - 1 && (
-                  <div className="text-slate-700 px-2 py-1 text-lg font-mono select-none rotate-90 md:rotate-0">›</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </motion.div>
-
-        </div>{/* flex-1 overflow-auto */}
-      </div>{/* flex-1 column */}
+      </div>
     </div>
   )
 }

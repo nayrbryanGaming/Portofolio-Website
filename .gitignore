@@ -7,3 +7,5 @@ dist/
 .cache/
 *.log
 *.tsbuildinfo
+
+.vercel
